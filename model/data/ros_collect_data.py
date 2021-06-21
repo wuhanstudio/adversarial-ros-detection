@@ -46,7 +46,7 @@ def image_callback(msg):
         global df
         # Convert your ROS Image message to OpenCV2
         cv2_img = bridge.imgmsg_to_cv2(msg, "bgr8")
-        cv2_img = cv2.resize(cv2_img, (416, 416), interpolation = cv2.INTER_AREA)
+        cv2_img = cv2.resize(cv2_img, (320, 160), interpolation = cv2.INTER_AREA)
         filename = 'IMG/' + current_time + '.jpg'
         cv2.imwrite(filename, cv2_img)
         df = df.append({
