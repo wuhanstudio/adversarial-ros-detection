@@ -1,5 +1,9 @@
 import glob, os
 os.chdir("./IMG")
+try:
+    os.remove("classes.txt")
+except OSError:
+    pass
 f = open("../trainval.txt", "w")
 for file in glob.glob("*.txt"):
     # Using readlines()
