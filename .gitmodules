@@ -1,3 +1,6 @@
 [submodule "model/utils/darknet"]
 	path = model/utils/darknet
 	url = https://github.com/AlexeyAB/darknet
+[submodule "model/utils/keras-YOLOv3-model-set"]
+	path = model/utils/keras-YOLOv3-model-set
+	url = https://github.com/david8862/keras-YOLOv3-model-set

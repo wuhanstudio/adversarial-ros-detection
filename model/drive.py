@@ -1,13 +1,16 @@
-#Import Relevant Libraries
 import argparse
+import time
+from tensorflow.python.ops.control_flow_ops import cond
+
+from tensorflow.python.ops.gen_lookup_ops import hash_table
+from tensorflow.python.ops.init_ops import he_normal
 
 # rospy for the subscriber
 import rospy
 
-# ROS Image message
+# ROS message
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
-from cv_bridge import CvBridge, CvBridgeError
 
 # Image Processing
 from PIL import Image as PImage
@@ -18,23 +21,31 @@ from io import BytesIO
 import base64
 from cv_bridge import CvBridge
 
+# Deep Learning Libraries
 import numpy as np
-import time
+np.set_printoptions(suppress=True)
+from keras.models import load_model
+from scipy.special import expit, softmax
+import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
+import keras.backend as K
 
-# from tensorflow.keras.models import load_model
+class RosTensorFlow():
+    def __init__(self, model, image_topic):
+        self.epsilon = 1
+        self.graph = tf.compat.v1.get_default_graph()
 
-class CVDetector():
+        self.model = load_model(model)
+        self.model.summary()
 
-    def __init__(self, image_topic, net, output_layers, classes, confidence_threashold=0.5):
-        self.net = net
-        self.output_layers = output_layers
-        self.classes = classes
-        self.confidence_threshold = confidence_threshold
+        self.sess = tf.compat.v1.keras.backend.get_session()
 
-        # Instantiate CvBridge
-        self.bridge = CvBridge()
+        self._cv_bridge = CvBridge()
 
-        rospy.Subscriber(image_topic, Image, self.image_callback)
+        # Input Image
+        self.input_sub = rospy.Subscriber(image_topic, Image, self.input_callback, queue_size=10)
+
+        # Publish images to the web UI
         self.input_pub = rospy.Publisher('/input_img', String, queue_size=10)
         self.adv_pub = rospy.Publisher('/adv_img', String, queue_size=10)
 
@@ -48,91 +59,117 @@ class CVDetector():
         image_as_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
         pub_topic.publish(image_as_str)
 
-    def image_callback(self, msg):
+    def attack_callback(self, attack_msg):
+        self.attack = attack_msg.data
+        print('Attack Type:', self.attack)
+
+    def input_callback(self, input_cv_image):
+        classes = ["traffic"]
+        confidence_threshold = 0.1
+        font = cv2.FONT_HERSHEY_SIMPLEX
+
         start_time = int(time.time() * 1000)
-        try:
-            # Convert your ROS Image message to OpenCV2
-            cv2_img = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-            img = cv2.resize(cv2_img, (320, 160), interpolation = cv2.INTER_AREA)
 
-            # Publish the model input image
-            self.publish_image(img, self.input_pub)
+        input_cv_image = self._cv_bridge.imgmsg_to_cv2(input_cv_image, "bgr8")
+        input_cv_image = cv2.resize(input_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
 
-            #get image shape
-            height, width, channels = img.shape
+        # Publish the model input image
+        self.publish_image(input_cv_image, self.input_pub)
+        
+        # get image shape
+        height, width, channels = input_cv_image.shape
 
-            # Detecting objects (YOLO)
-            blob = cv2.dnn.blobFromImage(img, 1./255, (320, 160), (0, 0, 0), False, crop=False)
-            self.net.setInput(blob)
-            outs = self.net.forward(self.output_layers)
-            # print(outs)
+        input_cv_image = input_cv_image.astype(np.float32) / 255.0
 
+        with self.graph.as_default():
+
+            outs = self.sess.run(self.model.output, feed_dict={self.model.input:np.array([input_cv_image])})
             # Showing informations on the screen (YOLO)
             class_ids = []
             confidences = []
             boxes = []
             for out in outs:
-                for detection in out:
-                    scores = detection[5:]
-                    class_id = np.argmax(scores)
-                    confidence = scores[class_id]
-                    if confidence > confidence_threshold:
-                        # Object detected
-                        center_x = int(detection[0] * width)
-                        center_y = int(detection[1] * height)
-                        w = int(detection[2] * width)
-                        h = int(detection[3] * height)
-                        # Rectangle coordinates
-                        x = int(center_x - w / 2)
-                        y = int(center_y - h / 2)
-                        boxes.append([x, y, w, h])
-                        confidences.append(float(confidence))
-                        class_ids.append(class_id)
+                anchors = [[12., 16.], [19., 36.], [40., 28.]]
+                # anchors = [[10., 14.],  [23., 27.],  [37., 58.]]
+                num_anchors = int(out.shape[-1] / (5+len(classes)))
+                grid_size = np.shape(out)[1:3]
+                out = out.reshape((-1, 6))
+                # generate x_y_offset grid map
+                grid_y = np.arange(grid_size[0])
+                grid_x = np.arange(grid_size[1])
+                x_offset, y_offset = np.meshgrid(grid_x, grid_y)
+
+                x_offset = np.reshape(x_offset, (-1, 1))
+                y_offset = np.reshape(y_offset, (-1, 1))
+
+                x_y_offset = np.concatenate((x_offset, y_offset), axis=1)
+                x_y_offset = np.tile(x_y_offset, (1, num_anchors))
+                x_y_offset = np.reshape(x_y_offset, (-1, 2))
+
+                anchors = np.tile(anchors, (grid_size[0] * grid_size[1], 1))
+
+                box_xy = (expit(out[..., :2]) + x_y_offset) / np.array(grid_size)[::-1]
+                box_wh = (np.exp(out[..., 2:4]) * anchors) / np.array((160, 320))[::-1]
+
+                scores = expit(out[:, 5:])
+                class_id = np.argmax(scores, axis=1)
+                confidence = scores[class_id][:, 0] * expit(out[:, 4])
+
+                box_xy = box_xy[confidence > confidence_threshold]
+                box_wh = box_wh[confidence > confidence_threshold]
+                class_id = class_id[confidence > confidence_threshold]
+                confidence = confidence[confidence > confidence_threshold]
+
+                if(len(confidence) > 0):
+                    box_tmp = list(np.concatenate((box_xy, box_wh), axis=1))
+                    for b in box_tmp:
+                        boxes.append(b)
+                    for c in confidence:
+                        confidences.append(float(c))
+                    for c in class_id:
+                        class_ids.append(c)
+
             indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+
             for i in range(len(boxes)):
                 if i in indexes:
                     x, y, w, h = boxes[i]
+                    x = x - w / 2
+                    y = y - h / 2
+                    x = int(x * 320 ) 
+                    y = int(y * 160)
+                    w = int(w * 320) 
+                    h = int(h * 160) 
+                    # w = int(w * 320 * 1.5) 
+                    # h = int(h * 160 * 1.5) 
                     label = str(classes[class_ids[i]]) + "=" + str(round(confidences[i]*100, 2)) + "%"
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (255,0,0), 2)
+                    cv2.rectangle(input_cv_image, (x, y), (x + w, y + h), (255,0,0), 2)
+                    cv2.putText(input_cv_image, label, (x, y), font, 0.5, (255,0,0), 2)
 
-            elapsed_time = int(time.time()*1000) - start_time
-            fps = 1000 / elapsed_time
-            print ("fps: ", str(round(fps, 2)))
-            cv2.imshow("Image", img)
-            # Publish the output image
-            self.publish_image(img, self.adv_pub)
+        elapsed_time = int(time.time()*1000) - start_time
+        fps = 1000 / elapsed_time
+        print ("fps: ", str(round(fps, 2)))
+        cv2.imshow("Image", input_cv_image)
+        # Publish the output image
+        self.publish_image(input_cv_image, self.adv_pub)
 
-            cv2.waitKey(1)
+        cv2.waitKey(1)
 
-        except CvBridgeError as e:
-            print(e)
+    def main(self):
+        rospy.spin()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Data Collection')
+    parser = argparse.ArgumentParser(description='Line Following')
     parser.add_argument('--env', help='environment', choices=['gazebo', 'turtlebot'], type=str, required=True)
+    parser.add_argument('--model', help='deep learning model', type=str, required=True)
     args = parser.parse_args()
+
+    rospy.init_node('ros_object_detection')
+
     if args.env == 'gazebo':
         image_topic = "/camera/rgb/image_raw"
     if args.env == 'turtlebot':       
         image_topic = "/raspicam_node/image_raw"
 
-    rospy.init_node('cv_detector')
-
-    # Spin until ctrl + c
-    '''Load YOLO (YOLOv3 or YOLOv4-Tiny)'''
-    #net = cv2.dnn.readNet("yolov3_training_last.weights", "yolov3_training.cfg")
-    net = cv2.dnn.readNet("yolov4-tiny-traffic_final.weights", "yolov4-tiny-traffic.cfg")
-
-    classes = []
-    with open("obj.names", "r") as f:
-        classes = [line.strip() for line in f.readlines()]
-
-    # get last layers names
-    layer_names = net.getLayerNames()
-    output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
-    confidence_threshold = 0.5
-
-    detector = CVDetector(image_topic, net, output_layers, classes)
-
-    # Spin until ctrl + c
-    rospy.spin()
+    tensor = RosTensorFlow(args.model, image_topic);
+    tensor.main()
