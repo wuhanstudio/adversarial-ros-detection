@@ -6,10 +6,28 @@
 
 
 
-Convert darknet yolov4-tiny model to keras model:
+```
+./darknet detector train data/obj.data cfg/yolov3-tiny-traffic.cfg yolov3-tiny.conv.11
+```
+
+k
 
 ```
 python tools/model_converter/convert.py cfg/yolov4-tiny.cfg weights/yolov4-tiny.weights weights/yolov4-tiny.h5
+```
+
+
+
+Train
+
+```
+./darknet detector train data/obj.data cfg/yolov4-tiny-traffic.cfg yolov4-tiny.conv.29
+```
+
+Convert darknet yolov4-tiny model to keras model:
+
+```
+python3 tools/model_converter/convert.py cfg/yolov4-tiny-traffic.cfg weights/yolov4-tiny-traffic.weights weights/yolov4-tiny-traffic.h5
 ```
 
 
