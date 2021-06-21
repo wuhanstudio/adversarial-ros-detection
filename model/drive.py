@@ -93,7 +93,7 @@ class RosTensorFlow():
                 # anchors = [[10., 14.],  [23., 27.],  [37., 58.]]
                 num_anchors = int(out.shape[-1] / (5+len(classes)))
                 grid_size = np.shape(out)[1:3]
-                out = out.reshape((-1, 6))
+                out = out.reshape((-1, 5+len(classes)))
                 # generate x_y_offset grid map
                 grid_y = np.arange(grid_size[0])
                 grid_x = np.arange(grid_size[1])
