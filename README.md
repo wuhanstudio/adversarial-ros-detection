@@ -14,7 +14,7 @@
     + [Step 2: Train the model](#step-2--train-the-model)
       - [Training darknet yolov3-tiny](#training-darknet-yolov3-tiny)
       - [Training darknet yolov4-tiny](#training-darknet-yolov4-tiny)
-      - [Train yolov4 mobilenet lite:](#train-yolov4-mobilenet-lite-)
+      - [Train yolov4 mobilenet lite](#train-yolov4-mobilenet-lite)
 
 ### Overview
 
@@ -141,7 +141,7 @@ $ cd model/utils/keras-YOLOv3-model-set
 $ python3 tools/model_converter/convert.py cfg/yolov4-tiny-traffic.cfg weights/yolov4-tiny-traffic.weights weights/yolov4-tiny-traffic.h5
 ```
 
-##### Train yolov4 mobilenet lite:
+##### Train yolov4 mobilenet lite
 
 Before training the model, we need to convert the format of annotation files:
 
