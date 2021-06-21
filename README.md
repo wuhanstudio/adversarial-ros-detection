@@ -173,7 +173,7 @@ $ python3 train.py --model_image_size=160x320 --model_type=yolo4_mobilenet_lite 
 Save the model as keras:
 
 ```
-python3 yolo.py --model_type=yolo4_mobilenet_lite --weights_path=logs/000/REPLACE_WITH_YOUR_CHECK_POINT.h5 --anchors_path=configs/yolo4_anchors.txt --classes_path=obj.names --model_image_size=160x320 --dump_model --output_model_file=yolov4_mobilenet_lite.h5
+python3 yolo.py --model_type=yolo4_mobilenet_lite --weights_path=logs/000/trained_final.h5 --anchors_path=configs/yolo4_anchors.txt --classes_path=obj.names --model_image_size=160x320 --dump_model --output_model_file=yolov4_mobilenet_lite.h5
 ```
 
 Test the model:
