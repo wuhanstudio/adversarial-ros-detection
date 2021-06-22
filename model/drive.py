@@ -64,7 +64,7 @@ class RosTensorFlow():
         print('Attack Type:', self.attack)
 
     def input_callback(self, input_cv_image):
-        classes = ["traffic"]
+        classes = ["stop", "30", "60"]
         confidence_threshold = 0.1
         font = cv2.FONT_HERSHEY_SIMPLEX
 
