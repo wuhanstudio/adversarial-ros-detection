@@ -31,29 +31,8 @@
     <div class="container">
         <div class="jumbotron">
             <h1 class="display-4">Adversarial Driving</h1>
-            <p class="lead">White-Box attacks against end-to-end autonomous driving systems.</p>
-            <hr class="my-4">
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioRandom" value="random"
-                    checked>
-                <label class="form-check-label" for="flexRadioRandom">
-                    Random Noise
-                </label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioLeft"
-                    value="fgsmr_left" checked>
-                <label class="form-check-label" for="flexRadioLeft">
-                    FGSMr: Left
-                </label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioRight"
-                    value="fgsmr_right">
-                <label class="form-check-label" for="flexRadioRight">
-                    FGSMr: Right
-                </label>
-            </div>
+            <p class="lead">White-Box attacks against end-to-end detection systems.</p>
+            <hr class="my-1">
             <!-- <div class="form-check">
                 <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioUniLeft"
                     value="unir_no_left">
@@ -73,7 +52,7 @@
                 <input class="custom-control-input" id="customSwitchTrain" type="checkbox">
                 <label class="custom-control-label font-italic" for="customSwitchTrain" id="train_res">Train</label>
             </p> -->
-            <p class="custom-control custom-switch custom-switch-lg mt-2">
+            <!-- <p class="custom-control custom-switch custom-switch-lg mt-2">
                 <input class="custom-control-input" id="customSwitchActivate" type="checkbox">
                 <label class="custom-control-label font-italic" for="customSwitchActivate"
                     id="attack_res">Attack</label>
@@ -81,37 +60,42 @@
             <div>
                 <button class="btn btn-primary" onmousedown="attack(1, 'fgsmr_left')" onmouseup="attack(0, 0)">Left</button>
                 <button class="btn btn-primary" onmousedown="attack(1, 'fgsmr_right')" onmouseup="attack(0, 0)"">Right</button>
-            </div>
+            </div> -->
         </div>
     </div>
 
     <!-- Visualize Input Images -->
     <div class="container">
-        <div class="row">
+        <!-- <div class="row">
             <div class="col-md-12">
                 <img id="origin" src="./hold.png" />
                 <h4>Camera Image</h4>
             </div>
-        </div>
+        </div> -->
         <div class="row">
             <div class="col-md-4">
                 <img id="input" src="./hold.png" />
                 <h4>Input Image</h4>
             </div>
+        </div>
+        <div class="row">
+
             <div class="col-md-4">
-                <img id="diff" src="./hold.png" />
+                <canvas id="canvas"></canvas>
                 <h4>Perturbation</h4>
             </div>
-            <div class="col-md-4">
+        </div>
+        <div class="row">
+                <div class="col-md-4">
                 <img id="adv" src="./hold.png" />
                 <h4>Adversarial Image</h4>
             </div>
         </div>
+        <hr />
     </div>
     <br />
-
     <!-- Visualize Steering Angle -->
-    <div class="container mt-3 mb-3">
+    <!-- <div class="container mt-3 mb-3">
         <h5>Steer</h5>
         <div class="progress mb-2">
             <div id="steer" class="progress-bar" role="progressbar" aria-valuenow="70" aria-valuemin="0"
@@ -120,6 +104,6 @@
             </div>
         </div>
         <div id="chart"></div>
-    </div>
+    </div> -->
 </body>
 </html>

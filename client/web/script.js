@@ -11,6 +11,10 @@ url : 'ws://localhost:9090'
 
 ros.on('connection', function() {
     console.log('Client has connected to the server!');
+    var clear_patch_msg = new ROSLIB.Message({
+        data: 1
+    });
+    clear_patch_pub.publish(clear_patch_msg);
     attack(0, $("input[name=flexRadioDefault]:checked").val());
 });
 
@@ -46,15 +50,15 @@ input_img_listener.subscribe(function(msg) {
 });
 
 // Display the perturbation
-var perturb_img_listener = new ROSLIB.Topic({
-    ros : ros,
-    name : '/perturb_img',
-    messageType : 'std_msgs/String'
-  });
+// var perturb_img_listener = new ROSLIB.Topic({
+//     ros : ros,
+//     name : '/perturb_img',
+//     messageType : 'std_msgs/String'
+//   });
 
-perturb_img_listener.subscribe(function(msg) {
-    $('#diff').attr("src", "data:image/png;base64," + msg.data);
-});
+// perturb_img_listener.subscribe(function(msg) {
+//     $('#diff').attr("src", "data:image/png;base64," + msg.data);
+// });
 
 // Display the adversarial image
 var adv_img_listener = new ROSLIB.Topic({
@@ -67,16 +71,26 @@ adv_img_listener.subscribe(function(msg) {
     $('#adv').attr("src", "data:image/png;base64," + msg.data);
 });
 
-// Receive Training result for UAPr
-// socket.on('unir_train', function (data) {
-//     $("#train_res").text("Train: " + parseFloat(data.absolute).toFixed(2) + ' ' + parseFloat(data.percentage).toFixed(2) + "%");
-// });
-
 // Activate the attack
 var attack_pub = new ROSLIB.Topic({
     ros : ros,
     name : '/attack',
     messageType : 'std_msgs/Int32'
+});
+
+
+// Clear Patch
+var clear_patch_pub = new ROSLIB.Topic({
+    ros : ros,
+    name : '/clear_patch',
+    messageType : 'std_msgs/Int32'
+});
+
+// Adversarial Patch Position
+var adv_patch_pub = new ROSLIB.Topic({
+    ros : ros,
+    name : '/adv_patch',
+    messageType : 'std_msgs/Int32MultiArray'
 });
 
 function attack(isAttack, type) {
@@ -105,149 +119,56 @@ function attack(isAttack, type) {
     }
 }
 
-// Chart Options
-var options = {
-    series: [
-        {
-            name: "Without attack",
-            data: steer_data.slice()
-        },
-        {
-            name: "With attack",
-            data: adv_data.slice()
-        },
-    ],
-    chart: {
-        id: 'realtime',
-        height: 350,
-        type: 'line',
-        animations: {
-            enabled: true,
-            easing: 'linear',
-            dynamicAnimation: {
-                speed: 1000
-            }
-        },
-        toolbar: {
-            show: false
-        },
-        zoom: {
-            enabled: false
-        }
-    },
-    colors: ['#77B6EA', '#545454'],
-    dataLabels: {
-        enabled: false
-    },
-    stroke: {
-        curve: 'smooth'
-    },
-    title: {
-        text: 'Steering Angle',
-        align: 'left',
-        style: {
-            fontSize: '20px'
-        }
-    },
-    markers: {
-        size: 0
-    },
-    xaxis: {
-        type: 'line',
-        labels: {
-            show: false
-        }
-        // range: XAXISRANGE,
-    },
-    yaxis: {
-        min: -200,
-        max: 200,
-        labels: {
-            style: {
-                fontSize: '18px',
-            }
-        },
-        decimalsInFloat: 1,
-        tickAmount: 10
-    },
-    legend: {
-        fontSize: '22px',
-        position: 'top',
-        horizontalAlign: 'right',
-        floating: true,
-        offsetY: -25,
-        offsetX: -5
-    }
-};
-
 // Attack Deactivated
 function resume() {
     $('#diff').attr("src", "./hold.png");
     $('#adv').attr("src", "./hold.png");
 }
 
+var boxes = [];
+
 $(document).ready(function () {
 
-    // Select different attacks
-    $("input[name=flexRadioDefault]").change(function () {
-        attack(0, this.value);
-        $("#customSwitchActivate").prop("checked", false);
-        $("#origin").css("border-style", "none");
-    });
-
-    // Activate different attacks
-    $('#customSwitchActivate').change(function () {
-        if ($(this).prop('checked')) {
-            attack(1, $("input[name=flexRadioDefault]:checked").val());
-            $("#origin").css("border-style", "solid");
-            $("#origin").css("border-color", "coral");
-            $("#customSwitchTrain").prop("checked", false);
-        }
-        else {
-            attack(0, $("input[name=flexRadioDefault]:checked").val());
-            $("#origin").css("border-style", "none");
-            resume();
-        }
-    })
-
-    // Activate traning / learning for Universal Adversarial Perturbation
-    // $('#customSwitchTrain').change(function () {
-    //     if ($(this).prop('checked')) {
-    //         attack(1, $("input[name=flexRadioDefault]:checked").val() + '_train');
-    //         $("#origin").css("border-style", "solid");
-    //         $("#origin").css("border-color", "coral");
-    //         $("#customSwitchActivate").prop("checked", false);
-    //     }
-    //     else {
-    //         attack(0, $("input[name=flexRadioDefault]:checked").val() + '_train');
-    //         $("#origin").css("border-style", "none")
-    //     }
-    // })
-
-    var chart = new ApexCharts(document.querySelector("#chart"), options);
-    chart.render();
-
-    var listener = new ROSLIB.Topic({
-        ros : ros,
-        name : '/cmd_vel_attack',
-        messageType : 'std_msgs/Float64MultiArray'
-    });
+    $(function() {
+        var ctx=$('#canvas')[0].getContext('2d'); 
+        rect = {};
+        drag = false;
     
-    listener.subscribe(function(message) {
-        window.data = message.data
-        console.log('Received message on ' + listener.name + ': ' + message.data[0]);
-        // $("#attack_res").text("Attack: From " + parseFloat(message.angular.z).toFixed(2) + ' to ' + parseFloat(message.linear.z).toFixed(2) );
-
-        steer_data.push(message.data[0] * 100);
-        adv_data.push(message.data[1] * 100);
-        if (steer_data.length > 50) {
-            steer_data.shift();
-        }
-        if (adv_data.length > 50) {
-            adv_data.shift();
-        }
-
-        chart.updateSeries([{ data: steer_data }, { data: adv_data }]);
-        // listener.unsubscribe();
+        $(document).on('mousedown','#canvas',function(e){
+            rect.startX = e.pageX - $(this).offset().left;
+            rect.startY = e.pageY - $(this).offset().top;
+            rect.w=0;
+            rect.h=0;
+            drag = true;
+        });
+    
+        $(document).on('mouseup',function(){
+            drag = false;
+            box = [Math.round(rect.startX), Math.round(rect.startY), Math.round(rect.w), Math.round(rect.h)]
+            var adv_patch_msg = new ROSLIB.Message({
+                data: box
+            });
+            adv_patch_pub.publish(adv_patch_msg)
+            box = {}
+            box.startX = rect.startX
+            box.startY = rect.startY
+            box.w = rect.w
+            box.h = rect.h
+            boxes.push(box)
+            console.log(boxes);
+        });
+    
+        $(document).on('mousemove',function(e){
+            if (drag) {
+                rect.w = (e.pageX - $("#canvas").offset().left)- rect.startX;
+                rect.h = (e.pageY - $("#canvas").offset().top)- rect.startY;
+                ctx.clearRect(0, 0, 320, 160);
+                boxes.forEach(b => {
+                    ctx.fillRect(b.startX, b.startY, b.w, b.h);
+                });
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(rect.startX, rect.startY, rect.w, rect.h);
+            }
+        });    
     });
 });

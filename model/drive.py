@@ -11,6 +11,8 @@ import rospy
 # ROS message
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
+from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int32
 
 # Image Processing
 from PIL import Image as PImage
@@ -30,13 +32,25 @@ import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 import keras.backend as K
 
+from datetime import datetime
+
 class RosTensorFlow():
     def __init__(self, model, image_topic):
         self.epsilon = 1
         self.graph = tf.compat.v1.get_default_graph()
+        self.noise = np.zeros((160, 320 , 3))
+        self.adv_patch_boxes = []
 
         self.model = load_model(model)
         self.model.summary()
+        self.loss_1 = K.max(K.sigmoid(K.reshape(self.model.output[0], (-1, 8))[:, 4]) * K.sigmoid(K.reshape(self.model.output[0], (-1, 8))[:, 5]))
+        self.loss_2 = K.max(K.sigmoid(K.reshape(self.model.output[1], (-1, 8))[:, 4]) * K.sigmoid(K.reshape(self.model.output[1], (-1, 8))[:, 5]))
+        self.loss_3 = K.max(K.sigmoid(K.reshape(self.model.output[2], (-1, 8))[:, 4]) * K.sigmoid(K.reshape(self.model.output[2], (-1, 8))[:, 5]))
+        
+        self.grads_1 = K.gradients(self.loss_1, self.model.input)
+        self.grads_2 = K.gradients(self.loss_2, self.model.input)
+        self.grads_3 = K.gradients(self.loss_3, self.model.input)
+        self.delta = K.sign(self.grads_1[0]) + K.sign(self.grads_2[0]) + K.sign(self.grads_3[0])
 
         self.sess = tf.compat.v1.keras.backend.get_session()
 
@@ -44,6 +58,10 @@ class RosTensorFlow():
 
         # Input Image
         self.input_sub = rospy.Subscriber(image_topic, Image, self.input_callback, queue_size=10)
+
+        # Adversarial Patch box
+        self.adv_clear_patch = rospy.Subscriber("/clear_patch", Int32, self.clear_patch_callback, queue_size=10)
+        self.adv_patch_box = rospy.Subscriber("/adv_patch", Int32MultiArray, self.patch_callback, queue_size=10)
 
         # Publish images to the web UI
         self.input_pub = rospy.Publisher('/input_img', String, queue_size=10)
@@ -63,9 +81,18 @@ class RosTensorFlow():
         self.attack = attack_msg.data
         print('Attack Type:', self.attack)
 
+    def clear_patch_callback(self, clear_msg):
+        if(clear_msg.data > 0):
+            self.adv_patch_boxes = []
+            self.noise = np.zeros((160, 320 , 3))
+
+    def patch_callback(self, attack_msg):
+        box = attack_msg.data
+        self.adv_patch_boxes.append(box)
+
     def input_callback(self, input_cv_image):
         classes = ["stop", "30", "60"]
-        confidence_threshold = 0.1
+        confidence_threshold = 0.01
         font = cv2.FONT_HERSHEY_SIMPLEX
 
         start_time = int(time.time() * 1000)
@@ -82,8 +109,14 @@ class RosTensorFlow():
         input_cv_image = input_cv_image.astype(np.float32) / 255.0
 
         with self.graph.as_default():
+            for box in self.adv_patch_boxes:
+                input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
+            if(len(self.adv_patch_boxes) > 0):
+                grads = self.sess.run(self.delta, feed_dict={self.model.input:np.array([input_cv_image])}) / 255.0
+                self.noise = self.noise + 5 * grads[0, :, :, :]
 
             outs = self.sess.run(self.model.output, feed_dict={self.model.input:np.array([input_cv_image])})
+
             # Showing informations on the screen (YOLO)
             class_ids = []
             confidences = []
@@ -109,7 +142,7 @@ class RosTensorFlow():
                 anchors = np.tile(anchors, (grid_size[0] * grid_size[1], 1))
 
                 box_xy = (expit(out[..., :2]) + x_y_offset) / np.array(grid_size)[::-1]
-                box_wh = (np.exp(out[..., 2:4]) * anchors) / np.array((160, 320))[::-1]
+                box_wh = (np.exp(out[..., 2:4]) * anchors) / np.array((height, width))[::-1]
 
                 scores = expit(out[:, 5:])
                 class_id = np.argmax(scores, axis=1)
@@ -128,6 +161,10 @@ class RosTensorFlow():
                         confidences.append(float(c))
                     for c in class_id:
                         class_ids.append(c)
+                    # if(len(confidence > 1)):
+                        # now = datetime.now()
+                        # current_time = now.strftime("%H-%M-%S-%f")
+                        # cv2.imwrite(current_time + '.jpg', self.noise * 255.0)
 
             indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
 
@@ -136,13 +173,12 @@ class RosTensorFlow():
                     x, y, w, h = boxes[i]
                     x = x - w / 2
                     y = y - h / 2
-                    x = int(x * 320 ) 
-                    y = int(y * 160)
-                    w = int(w * 320) 
-                    h = int(h * 160) 
-                    # w = int(w * 320 * 1.5) 
-                    # h = int(h * 160 * 1.5) 
+                    x = int(x * width ) 
+                    y = int(y * height)
+                    w = int(w * width) 
+                    h = int(h * height) 
                     label = str(classes[class_ids[i]]) + "=" + str(round(confidences[i]*100, 2)) + "%"
+                    print(label)
                     cv2.rectangle(input_cv_image, (x, y), (x + w, y + h), (255,0,0), 2)
                     cv2.putText(input_cv_image, label, (x, y), font, 0.5, (255,0,0), 2)
 
@@ -151,7 +187,7 @@ class RosTensorFlow():
         print ("fps: ", str(round(fps, 2)))
         cv2.imshow("Image", input_cv_image)
         # Publish the output image
-        self.publish_image(input_cv_image, self.adv_pub)
+        self.publish_image(input_cv_image * 255.0, self.adv_pub)
 
         cv2.waitKey(1)
 
@@ -159,7 +195,7 @@ class RosTensorFlow():
         rospy.spin()
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Line Following')
+    parser = argparse.ArgumentParser(description='Object Detection')
     parser.add_argument('--env', help='environment', choices=['gazebo', 'turtlebot'], type=str, required=True)
     parser.add_argument('--model', help='deep learning model', type=str, required=True)
     args = parser.parse_args()

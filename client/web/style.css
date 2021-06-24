@@ -2,6 +2,13 @@
     width: 50%;
 }
 
+#canvas {
+    width:320px;
+    height:160px;
+    border: 1px solid;
+}
+
+
 /*
 *
 * ==========================================
