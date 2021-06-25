@@ -212,12 +212,16 @@ class RosTensorFlow():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Object Detection')
-    parser.add_argument('--env', help='environment', choices=['gazebo', 'turtlebot'], type=str, required=True)
+    parser.add_argument('--env', help='environment', choices=['camera', 'gazebo', 'turtlebot'], type=str, required=True)
     parser.add_argument('--model', help='deep learning model', type=str, required=True)
     args = parser.parse_args()
 
     rospy.init_node('ros_object_detection')
 
+    # We can also read images from usb_cam
+    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=160 _pixel_format:=yuyv
+    if args.env == 'camera':
+        image_topic = "/usb_cam/image_raw"
     if args.env == 'gazebo':
         image_topic = "/camera/rgb/image_raw"
     if args.env == 'turtlebot':       

@@ -52,10 +52,10 @@ $ cd model
 # rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 
 # For Gazebo Simulator
-$ python3 drive.py --env gazebo --model weights/keras/yolov4_mobilenet_lite_3_gazebo.h5
+$ python3 detect.py --env gazebo --model weights/keras/yolov4_mobilenet_lite_3_gazebo.h5
 
 # For real turtlebot3
-$ python3 drive.py --env turtlebot --model weights/keras/yolov4_mobilenet_lite_3_gazebo_turtlebot.h5
+$ python3 detect.py --env turtlebot --model weights/keras/yolov4_mobilenet_lite_3_gazebo_turtlebot.h5
 ```
 
 **Optional** (test models only without attacks):
