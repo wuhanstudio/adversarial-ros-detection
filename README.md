@@ -131,27 +131,27 @@ $ # Compiling the darknet binary
 $ make
 
 $ cp -r ../darknet-conf/one-class/* ./
-$ ./darknet detector train data/obj.data cfg/yolov3-tiny-traffic.cfg yolov3-tiny.conv.11
+$ ./darknet detector train data/obj.data cfg/yolov3-tiny-traffic-3.cfg yolov3-tiny.conv.11
 ```
 
 Finally, we can convert the darknet *.weights file to keras *.h5 file:
 
 ```
 $ cd model/utils/keras-YOLOv3-model-set
-$ python3 tools/model_converter/convert.py cfg/yolov3-tiny-traffic.cfg weights/yolov3-tiny-traffic.weights weights/yolov3-tiny-traffic.h5
+$ python3 tools/model_converter/convert.py cfg/yolov3-tiny-traffic-3.cfg weights/yolov3-tiny-traffic-3.weights weights/yolov3-tiny-traffic-3.h5
 ```
 
 ##### Training darknet yolov4-tiny
 
 ```
-$ ./darknet detector train data/obj.data cfg/yolov4-tiny-traffic.cfg yolov4-tiny.conv.29
+$ ./darknet detector train data/obj.data cfg/yolov4-tiny-traffic-3.cfg yolov4-tiny.conv.29
 ```
 
 Similarly, we can convert the darknet *.weights file to keras *.h5 file:
 
 ```
 $ cd model/utils/keras-YOLOv3-model-set
-$ python3 tools/model_converter/convert.py cfg/yolov4-tiny-traffic.cfg weights/yolov4-tiny-traffic.weights weights/yolov4-tiny-traffic.h5
+$ python3 tools/model_converter/convert.py cfg/yolov4-tiny-traffic-3.cfg weights/yolov4-tiny-traffic-3.weights weights/yolov4-tiny-traffic-3.h5
 ```
 
 ##### Training yolov4 mobilenet lite
