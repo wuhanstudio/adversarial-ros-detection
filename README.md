@@ -14,11 +14,11 @@
     + [Step 2: Train the model](#step-2--train-the-model)
       - [Training darknet yolov3-tiny](#training-darknet-yolov3-tiny)
       - [Training darknet yolov4-tiny](#training-darknet-yolov4-tiny)
-      - [Train yolov4 mobilenet lite](#train-yolov4-mobilenet-lite)
+      - [Training yolov4 mobilenet lite](#training-yolov4-mobilenet-lite)
 
 ### Overview
 
-![](doc/adversarial-ros-driving.png)
+![](doc/adversarial-ros-detection.gif)
 
 
 
@@ -51,11 +51,24 @@ $ cd model
 # You may need to put the turtlebot on track first
 # rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 
-# For real turtlebot3
-$ python3 drive.py --env turtlebot --model yolov4-tiny-traffic.h5
 # For Gazebo Simulator
-$ python3 drive.py --env gazebo --model yolov4-tiny-traffic.h5
+$ python3 drive.py --env gazebo --model weights/keras/yolov4_mobilenet_lite_3_gazebo.h5
+
+# For real turtlebot3
+$ python3 drive.py --env turtlebot --model weights/keras/yolov4_mobilenet_lite_3_gazebo_turtlebot.h5
 ```
+
+**Optional** (test models only without attacks):
+
+```
+# For real turblebot3
+$ python3 detect_cv.py --env turtlebot --cfg weights/darknet/yolov3/yolov3-tiny-traffic-3.cfg --weights weights/darknet/yolov3/yolov3-tiny-traffic-3_turtlebot.weights --classes weights/classes.txt
+
+# For Gazebo Simulator
+$ python3 detect_cv.py --env gazebo --cfg weights/darknet/yolov3/yolov3-tiny-traffic-3.cfg --weights weights/darknet/yolov3/yolov3-tiny-traffic-3_gazebo.weights --classes weights/classes.txt
+```
+
+
 
 #### Step 3: Setup the browser
 
@@ -79,9 +92,9 @@ The web page will be available at: http://localhost:3333/
 
 That's it!
 
+![](doc/adversarial-ros-detection.png)
 
-
-### Training the model
+### Training the model (Optional)
 
 #### Step 1: Collect the Data
 
@@ -141,7 +154,7 @@ $ cd model/utils/keras-YOLOv3-model-set
 $ python3 tools/model_converter/convert.py cfg/yolov4-tiny-traffic.cfg weights/yolov4-tiny-traffic.weights weights/yolov4-tiny-traffic.h5
 ```
 
-##### Train yolov4 mobilenet lite
+##### Training yolov4 mobilenet lite
 
 Before training the model, we need to convert the format of annotation files:
 

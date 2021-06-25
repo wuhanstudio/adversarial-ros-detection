@@ -51,6 +51,7 @@ class RosTensorFlow():
         self.grads_2 = K.gradients(self.loss_2, self.model.input)
         self.grads_3 = K.gradients(self.loss_3, self.model.input)
         self.delta = K.sign(self.grads_1[0]) + K.sign(self.grads_2[0]) + K.sign(self.grads_3[0])
+        self.iter = 0
 
         self.sess = tf.compat.v1.keras.backend.get_session()
 
@@ -66,6 +67,11 @@ class RosTensorFlow():
         # Publish images to the web UI
         self.input_pub = rospy.Publisher('/input_img', String, queue_size=10)
         self.adv_pub = rospy.Publisher('/adv_img', String, queue_size=10)
+        self.patch_pub = rospy.Publisher('/perturb_img', String, queue_size=10)
+
+        # This preloads the graph but then it takes more steps to iterate
+        #with self.graph.as_default():
+        #    _ = self.sess.run(self.delta, feed_dict={self.model.input:np.array([self.noise])})
 
     def publish_image(self, cv_image, pub_topic):
         # _, buffer = cv2.imencode('.jpg', cv_image)
@@ -85,10 +91,12 @@ class RosTensorFlow():
         if(clear_msg.data > 0):
             self.adv_patch_boxes = []
             self.noise = np.zeros((160, 320 , 3))
+            self.iter = 0
 
     def patch_callback(self, attack_msg):
         box = attack_msg.data
         self.adv_patch_boxes.append(box)
+        self.iter = 0
 
     def input_callback(self, input_cv_image):
         classes = ["stop", "30", "60"]
@@ -114,6 +122,14 @@ class RosTensorFlow():
             if(len(self.adv_patch_boxes) > 0):
                 grads = self.sess.run(self.delta, feed_dict={self.model.input:np.array([input_cv_image])}) / 255.0
                 self.noise = self.noise + 5 * grads[0, :, :, :]
+                self.iter = self.iter + 1
+                if(self.iter % 20 == 0):
+                    patch_cv_image = np.zeros((width, height, channels))
+                    patch_cv_image = cv2.resize(patch_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
+                    for box in self.adv_patch_boxes:
+                        patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
+                    # Publish the patch image
+                    self.publish_image(patch_cv_image * 255.0, self.patch_pub)
 
             outs = self.sess.run(self.model.output, feed_dict={self.model.input:np.array([input_cv_image])})
 

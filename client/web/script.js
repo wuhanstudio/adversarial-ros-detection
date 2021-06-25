@@ -1,7 +1,3 @@
-// Driving Data from the Server
-var steer_data = [];
-var adv_data = [];
-
 // Connecting to ROS
 // -----------------
 
@@ -11,11 +7,7 @@ url : 'ws://localhost:9090'
 
 ros.on('connection', function() {
     console.log('Client has connected to the server!');
-    var clear_patch_msg = new ROSLIB.Message({
-        data: 1
-    });
-    clear_patch_pub.publish(clear_patch_msg);
-    attack(0, $("input[name=flexRadioDefault]:checked").val());
+    clear_patch();
 });
 
 ros.on('error', function(error) {
@@ -50,15 +42,15 @@ input_img_listener.subscribe(function(msg) {
 });
 
 // Display the perturbation
-// var perturb_img_listener = new ROSLIB.Topic({
-//     ros : ros,
-//     name : '/perturb_img',
-//     messageType : 'std_msgs/String'
-//   });
+var perturb_img_listener = new ROSLIB.Topic({
+    ros : ros,
+    name : '/perturb_img',
+    messageType : 'std_msgs/String'
+  });
 
-// perturb_img_listener.subscribe(function(msg) {
-//     $('#diff').attr("src", "data:image/png;base64," + msg.data);
-// });
+perturb_img_listener.subscribe(function(msg) {
+    $('#patch').attr("src", "data:image/png;base64," + msg.data);
+});
 
 // Display the adversarial image
 var adv_img_listener = new ROSLIB.Topic({
@@ -70,14 +62,6 @@ var adv_img_listener = new ROSLIB.Topic({
 adv_img_listener.subscribe(function(msg) {
     $('#adv').attr("src", "data:image/png;base64," + msg.data);
 });
-
-// Activate the attack
-var attack_pub = new ROSLIB.Topic({
-    ros : ros,
-    name : '/attack',
-    messageType : 'std_msgs/Int32'
-});
-
 
 // Clear Patch
 var clear_patch_pub = new ROSLIB.Topic({
@@ -93,39 +77,18 @@ var adv_patch_pub = new ROSLIB.Topic({
     messageType : 'std_msgs/Int32MultiArray'
 });
 
-function attack(isAttack, type) {
-    if(isAttack)
-    {
-        var attack_type = 0;
-        if(type === 'fgsmr_left')
-        {
-            attack_type = 1;
-        }
-        if(type === 'fgsmr_right')
-        {
-            attack_type = 2;
-        }
-        var attack_msg = new ROSLIB.Message({
-            data: attack_type
-        });
-        attack_pub.publish(attack_msg);
-    }
-    else
-    {
-        var attack_msg = new ROSLIB.Message({
-            data: 0
-        });
-        attack_pub.publish(attack_msg);
-    }
-}
-
-// Attack Deactivated
-function resume() {
-    $('#diff').attr("src", "./hold.png");
-    $('#adv').attr("src", "./hold.png");
-}
-
 var boxes = [];
+
+function clear_patch() {
+    var clear_patch_msg = new ROSLIB.Message({
+        data: 1
+    });
+    clear_patch_pub.publish(clear_patch_msg);
+    boxes = [];
+    var ctx=$('#canvas')[0].getContext('2d'); 
+    ctx.clearRect(0, 0, 320, 160);
+}
+
 
 $(document).ready(function () {
 
@@ -142,7 +105,7 @@ $(document).ready(function () {
             drag = true;
         });
     
-        $(document).on('mouseup',function(){
+        $(document).on('mouseup', '#canvas', function(){
             drag = false;
             box = [Math.round(rect.startX), Math.round(rect.startY), Math.round(rect.w), Math.round(rect.h)]
             var adv_patch_msg = new ROSLIB.Message({
