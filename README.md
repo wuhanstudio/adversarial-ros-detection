@@ -1,5 +1,7 @@
 ## Adversarial Detection in ROS
 
+![](doc/attack.jpg)
+
 > Attacking End-to-End Object Detection Systems
 
 - [Adversarial Detection in ROS](#adversarial-detection-in-ros)
@@ -19,8 +21,6 @@
 ### Overview
 
 Generating adversarial patch is as easy as **drag and drop**.
-
-![](doc/attack.jpg)
 
 ![](doc/adversarial-ros-detection.gif)
 
