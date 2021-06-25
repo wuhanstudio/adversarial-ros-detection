@@ -18,9 +18,11 @@
 
 ### Overview
 
+Generating adversarial patch is as easy as **drag and drop**.
+
+![](doc/attack.jpg)
+
 ![](doc/adversarial-ros-detection.gif)
-
-
 
 ### Quick Start
 
