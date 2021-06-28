@@ -114,12 +114,16 @@ class CVDetector():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Data Collection')
-    parser.add_argument('--env', help='environment', choices=['gazebo', 'turtlebot'], type=str, required=True)
+    parser.add_argument('--env', help='environment', choices=['camera', 'gazebo', 'turtlebot'], type=str, required=True)
     parser.add_argument('--cfg', help='yolo cfg file', type=str, required=True)
     parser.add_argument('--weights', help='yolo weights file', type=str, required=True)
     parser.add_argument('--classes', help='yolo class name', type=str, required=True)
     args = parser.parse_args()
 
+    # We can also read images from usb_cam
+    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=160 _pixel_format:=yuyv
+    if args.env == 'camera':
+        image_topic = "/usb_cam/image_raw"
     if args.env == 'gazebo':
         image_topic = "/camera/rgb/image_raw"
     if args.env == 'turtlebot':       
