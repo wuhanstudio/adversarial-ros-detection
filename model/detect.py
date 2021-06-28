@@ -40,14 +40,16 @@ class RosTensorFlow():
 
         self.model = load_model(model)
         self.model.summary()
-        self.loss_1 = K.max(K.sigmoid(K.reshape(self.model.output[0], (-1, 8))[:, 4]) * K.sigmoid(K.reshape(self.model.output[0], (-1, 8))[:, 5]))
-        self.loss_2 = K.max(K.sigmoid(K.reshape(self.model.output[1], (-1, 8))[:, 4]) * K.sigmoid(K.reshape(self.model.output[1], (-1, 8))[:, 5]))
-        self.loss_3 = K.max(K.sigmoid(K.reshape(self.model.output[2], (-1, 8))[:, 4]) * K.sigmoid(K.reshape(self.model.output[2], (-1, 8))[:, 5]))
-        
-        self.grads_1 = K.gradients(self.loss_1, self.model.input)
-        self.grads_2 = K.gradients(self.loss_2, self.model.input)
-        self.grads_3 = K.gradients(self.loss_3, self.model.input)
-        self.delta = K.sign(self.grads_1[0]) + K.sign(self.grads_2[0]) + K.sign(self.grads_3[0])
+
+        self.delta = None
+        for out in self.model.output:
+            loss = K.max(K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]))
+            grads = K.gradients(loss, self.model.input)
+            if self.delta == None:
+                self.delta =  K.sign(grads[0])
+            else:
+                self.delta = self.delta + K.sign(grads[0])
+
         self.iter = 0
 
         self.sess = tf.compat.v1.keras.backend.get_session()
@@ -66,6 +68,9 @@ class RosTensorFlow():
         self.input_pub = rospy.Publisher('/input_img', String, queue_size=10)
         self.adv_pub = rospy.Publisher('/adv_img', String, queue_size=10)
         self.patch_pub = rospy.Publisher('/perturb_img', String, queue_size=10)
+
+        # Detection result
+        self.detect_pub = rospy.Publisher('/detect', Int32, queue_size=10)
 
         # This preloads the graph but then it takes more steps to iterate
         #with self.graph.as_default():
@@ -188,8 +193,12 @@ class RosTensorFlow():
 
             indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
 
+            detected = False
             for i in range(len(boxes)):
                 if i in indexes:
+                    detected = True
+                    self.detect_pub.publish(class_ids[i]+1)
+
                     x, y, w, h = boxes[i]
                     x = x - w / 2
                     y = y - h / 2
@@ -201,6 +210,9 @@ class RosTensorFlow():
                     print(label)
                     cv2.rectangle(input_cv_image, (x, y), (x + w, y + h), (255,0,0), 2)
                     cv2.putText(input_cv_image, label, (x, y), font, 0.5, (255,0,0), 2)
+
+            if not detected:
+                self.detect_pub.publish(0)
 
         elapsed_time = int(time.time()*1000) - start_time
         fps = 1000 / elapsed_time
