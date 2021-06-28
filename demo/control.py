@@ -7,6 +7,7 @@ from geometry_msgs.msg import Twist
 
 linear_x = 0
 angular_z = 0
+ratio = 1
 
 def steer_callback(msg):
     global linear_x
@@ -20,11 +21,12 @@ def steer_callback(msg):
 def callback(msg):
     global linear_x
     global angular_z
+    global ratio
 
     # nothing
     if msg.data == 0:
         print('[0] No object')
-        linear_x = 0.15
+        linear_x = 0.015 * ratio
 
     # stop
     if msg.data == 1:
@@ -34,12 +36,12 @@ def callback(msg):
     # 30 
     if msg.data == 2:
         print('[2] Deaccelerate')
-        linear_x = 0.1
+        linear_x = 0.01 * ratio
 
     # 60
     if msg.data == 3:
         print('[3] Accelerate')
-        linear_x = 0.2
+        linear_x = 0.02 * ratio
 
     move = Twist()
     move.angular.z = angular_z
@@ -51,9 +53,9 @@ parser.add_argument('--env', help='environment', choices=['gazebo', 'turtlebot']
 args = parser.parse_args()
 
 if args.env == 'gazebo':
-    linear_x = 0.15
+    ratio = 10
 if args.env == 'turtlebot':
-    linear_x = 0.015
+    ratio = 1
 
 rospy.init_node('control_node')
 sub = rospy.Subscriber('/detect', Int32, callback)
