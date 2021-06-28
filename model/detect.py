@@ -1,9 +1,5 @@
 import argparse
 import time
-from tensorflow.python.ops.control_flow_ops import cond
-
-from tensorflow.python.ops.gen_lookup_ops import hash_table
-from tensorflow.python.ops.init_ops import he_normal
 
 # rospy for the subscriber
 import rospy
@@ -40,6 +36,7 @@ class RosTensorFlow():
         self.graph = tf.compat.v1.get_default_graph()
         self.noise = np.zeros((160, 320 , 3))
         self.adv_patch_boxes = []
+        self.fixed = False
 
         self.model = load_model(model)
         self.model.summary()
@@ -62,6 +59,7 @@ class RosTensorFlow():
 
         # Adversarial Patch box
         self.adv_clear_patch = rospy.Subscriber("/clear_patch", Int32, self.clear_patch_callback, queue_size=10)
+        self.adv_fix_patch = rospy.Subscriber("/fix_patch", Int32, self.fix_patch_callback, queue_size=10)
         self.adv_patch_box = rospy.Subscriber("/adv_patch", Int32MultiArray, self.patch_callback, queue_size=10)
 
         # Publish images to the web UI
@@ -86,6 +84,12 @@ class RosTensorFlow():
     def attack_callback(self, attack_msg):
         self.attack = attack_msg.data
         print('Attack Type:', self.attack)
+
+    def fix_patch_callback(self, clear_msg):
+        if(clear_msg.data > 0):
+            self.fixed = True
+        else:
+            self.fixed = False
 
     def clear_patch_callback(self, clear_msg):
         if(clear_msg.data > 0):
@@ -119,7 +123,7 @@ class RosTensorFlow():
         with self.graph.as_default():
             for box in self.adv_patch_boxes:
                 input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
-            if(len(self.adv_patch_boxes) > 0):
+            if(len(self.adv_patch_boxes) > 0 and (not self.fixed)):
                 grads = self.sess.run(self.delta, feed_dict={self.model.input:np.array([input_cv_image])}) / 255.0
                 self.noise = self.noise + 5 * grads[0, :, :, :]
                 self.iter = self.iter + 1

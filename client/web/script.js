@@ -70,6 +70,13 @@ var clear_patch_pub = new ROSLIB.Topic({
     messageType : 'std_msgs/Int32'
 });
 
+// Fix Patch
+var fix_patch_pub = new ROSLIB.Topic({
+    ros : ros,
+    name : '/fix_patch',
+    messageType : 'std_msgs/Int32'
+});
+
 // Adversarial Patch Position
 var adv_patch_pub = new ROSLIB.Topic({
     ros : ros,
@@ -89,8 +96,27 @@ function clear_patch() {
     ctx.clearRect(0, 0, 320, 160);
 }
 
+function fix_patch(fixed) {
+    var fix_patch_msg = new ROSLIB.Message({
+        data: parseInt(fixed)
+    });
+    fix_patch_pub.publish(fix_patch_msg);
+}
+
 
 $(document).ready(function () {
+
+    // Fix patch
+    $("#customCheck1").change(function() {
+        if(this.checked) {
+            fix_patch(1);
+            //Do stuff
+        }
+        else
+        {
+            fix_patch(0);
+        }
+    });
 
     $(function() {
         var ctx=$('#canvas')[0].getContext('2d'); 
