@@ -1,26 +1,28 @@
 ## Adversarial Detection in ROS
 
+![](doc/attack.jpg)
+
 > Attacking End-to-End Object Detection Systems
 
 - [Adversarial Detection in ROS](#adversarial-detection-in-ros)
   * [Overview](#overview)
   * [Quick Start](#quick-start)
-    + [Step 0: Prerequisites](#step-0--prerequisites)
-    + [Step 1: Setup  the TurtleBot](#step-1--setup--the-turtlebot)
-    + [Step 2: Setup the server](#step-2--setup-the-server)
-    + [Step 3: Setup the browser](#step-3--setup-the-browser)
-  * [Training the model](#training-the-model)
-    + [Step 1: Collect the Data](#step-1--collect-the-data)
-    + [Step 2: Train the model](#step-2--train-the-model)
+    + [Step 0: Prerequisites](#step-0-prerequisites)
+    + [Step 1: Setup  the TurtleBot](#step-1-setup-the-turtlebot)
+    + [Step 2: Setup the server](#step-2-setup-the-server)
+    + [Step 3: Setup the browser](#step-3-setup-the-browser)
+  * [Training the model (Optional)](#training-the-model-optional)
+    + [Step 1: Collect the Data](#step-1-collect-the-data)
+    + [Step 2: Train the model](#step-2-train-the-model)
       - [Training darknet yolov3-tiny](#training-darknet-yolov3-tiny)
       - [Training darknet yolov4-tiny](#training-darknet-yolov4-tiny)
       - [Training yolov4 mobilenet lite](#training-yolov4-mobilenet-lite)
 
 ### Overview
 
+Generating adversarial patch is as easy as **drag and drop**.
+
 ![](doc/adversarial-ros-detection.gif)
-
-
 
 ### Quick Start
 
@@ -31,7 +33,7 @@ $ sudo apt install ros-noetic-desktop
 $ sudo apt install ros-noetic-rosbridge-suite ros-noetic-turtlebot3-simulations ros-noetic-turtlebot3-gazebo
 ```
 
-#### Step 1: Setup  the TurtleBot
+#### Step 1: Setup the TurtleBot
 
 ```
 $ cd ros_ws
