@@ -103,9 +103,12 @@ class RosTensorFlow():
             self.iter = 0
 
     def patch_callback(self, attack_msg):
-        box = attack_msg.data
-        self.adv_patch_boxes.append(box)
-        self.iter = 0
+        box = attack_msg.data[1:]
+        if(attack_msg.data[0] < 0):
+            self.adv_patch_boxes.append(box)
+            self.iter = 0
+        else:
+            self.adv_patch_boxes[attack_msg.data[0]] = box
 
     def input_callback(self, input_cv_image):
         classes = ["stop", "30", "60"]

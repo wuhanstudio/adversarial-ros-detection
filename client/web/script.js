@@ -122,41 +122,75 @@ $(document).ready(function () {
         var ctx=$('#canvas')[0].getContext('2d'); 
         rect = {};
         drag = false;
-    
+
+        move = false;
+        box_index = 0;
+        startX = 0;
+        startY = 0;
+
         $(document).on('mousedown','#canvas',function(e){
-            rect.startX = e.pageX - $(this).offset().left;
-            rect.startY = e.pageY - $(this).offset().top;
-            rect.w=0;
-            rect.h=0;
-            drag = true;
+            startX = e.pageX - $(this).offset().left;
+            startY = e.pageY - $(this).offset().top;
+            console.log(startX, startY);
+            for (box_index = 0; box_index < boxes.length; box_index++) {
+                if( (startX >= boxes[box_index].startX) && (startY >= boxes[box_index].startY)) {
+                    if( ((startX - boxes[box_index].startX) <= boxes[box_index].w) && ((startY - boxes[box_index].startY) <= boxes[box_index].h)) {
+                        move = true;
+                        break;
+                    }
+                }
+            }
+            if(!move){
+                rect.startX = e.pageX - $(this).offset().left;
+                rect.startY = e.pageY - $(this).offset().top;
+                rect.w=0;
+                rect.h=0;
+                drag = true;
+            }
         });
     
         $(document).on('mouseup', '#canvas', function(){
-            drag = false;
-            box = [Math.round(rect.startX), Math.round(rect.startY), Math.round(rect.w), Math.round(rect.h)]
-            var adv_patch_msg = new ROSLIB.Message({
-                data: box
-            });
-            adv_patch_pub.publish(adv_patch_msg)
-            box = {}
-            box.startX = rect.startX
-            box.startY = rect.startY
-            box.w = rect.w
-            box.h = rect.h
-            boxes.push(box)
-            console.log(boxes);
+            if(!move){
+                drag = false;
+                box = [-1, Math.round(rect.startX), Math.round(rect.startY), Math.round(rect.w), Math.round(rect.h)]
+                var adv_patch_msg = new ROSLIB.Message({
+                    data: box
+                });
+                adv_patch_pub.publish(adv_patch_msg)
+                box = {}
+                box.startX = rect.startX
+                box.startY = rect.startY
+                box.w = rect.w
+                box.h = rect.h
+                boxes.push(box)
+                // console.log(boxes);
+            }
+            else {
+                move = false;
+                box = [box_index, Math.round(boxes[box_index].startX), Math.round(boxes[box_index].startY), Math.round(boxes[box_index].w), Math.round(boxes[box_index].h)]
+                var adv_patch_msg = new ROSLIB.Message({
+                    data: box
+                });
+                adv_patch_pub.publish(adv_patch_msg)
+            }
         });
     
         $(document).on('mousemove',function(e){
+            ctx.clearRect(0, 0, 320, 160);
+            boxes.forEach(b => {
+                ctx.fillRect(b.startX, b.startY, b.w, b.h);
+            });
             if (drag) {
                 rect.w = (e.pageX - $("#canvas").offset().left)- rect.startX;
                 rect.h = (e.pageY - $("#canvas").offset().top)- rect.startY;
-                ctx.clearRect(0, 0, 320, 160);
-                boxes.forEach(b => {
-                    ctx.fillRect(b.startX, b.startY, b.w, b.h);
-                });
                 ctx.fillStyle = 'rgba(0,0,0,0.5)';
                 ctx.fillRect(rect.startX, rect.startY, rect.w, rect.h);
+            }
+            if (move) {
+                boxes[box_index].startX += ((e.pageX - $("#canvas").offset().left) - startX);
+                boxes[box_index].startY += ((e.pageY - $("#canvas").offset().top) - startY);
+                startX = (e.pageX - $("#canvas").offset().left);
+                startY = (e.pageY - $("#canvas").offset().top);
             }
         });    
     });
