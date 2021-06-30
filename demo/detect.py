@@ -43,7 +43,12 @@ class RosTensorFlow():
 
         self.delta = None
         for out in self.model.output:
-            loss = K.max(K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]))
+            # Targeted One Box
+            # loss = K.max(K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]))
+            # Targeted More boxes
+            loss = K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5])
+            # Untargeted More boxes
+            # loss = K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]) + K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 6]) + K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 7])
             grads = K.gradients(loss, self.model.input)
             if self.delta == None:
                 self.delta =  K.sign(grads[0])
@@ -93,6 +98,12 @@ class RosTensorFlow():
     def fix_patch_callback(self, clear_msg):
         if(clear_msg.data > 0):
             self.fixed = True
+            patch_cv_image = np.zeros((160, 320, 3))
+            # patch_cv_image = cv2.resize(patch_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
+            for box in self.adv_patch_boxes:
+                patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
+            # Publish the patch image
+            self.publish_image(patch_cv_image * 255.0, self.patch_pub)
         else:
             self.fixed = False
 
@@ -135,13 +146,6 @@ class RosTensorFlow():
                 grads = self.sess.run(self.delta, feed_dict={self.model.input:np.array([input_cv_image])}) / 255.0
                 self.noise = self.noise + 5 * grads[0, :, :, :]
                 self.iter = self.iter + 1
-                if(self.iter % 20 == 0):
-                    patch_cv_image = np.zeros((width, height, channels))
-                    patch_cv_image = cv2.resize(patch_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
-                    for box in self.adv_patch_boxes:
-                        patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
-                    # Publish the patch image
-                    self.publish_image(patch_cv_image * 255.0, self.patch_pub)
 
             outs = self.sess.run(self.model.output, feed_dict={self.model.input:np.array([input_cv_image])})
 
@@ -220,7 +224,7 @@ class RosTensorFlow():
         elapsed_time = int(time.time()*1000) - start_time
         fps = 1000 / elapsed_time
         print ("fps: ", str(round(fps, 2)))
-        cv2.imshow("Image", input_cv_image)
+        # cv2.imshow("Image", input_cv_image)
         # Publish the output image
         self.publish_image(input_cv_image * 255.0, self.adv_pub)
 
