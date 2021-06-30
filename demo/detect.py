@@ -17,7 +17,6 @@ from PIL import Image as PImage
 import cv2
 from io import BytesIO
 import base64
-from cv_bridge import CvBridge
 
 # Deep Learning Libraries
 import numpy as np
@@ -58,8 +57,6 @@ class RosTensorFlow():
         self.iter = 0
 
         self.sess = tf.compat.v1.keras.backend.get_session()
-
-        self._cv_bridge = CvBridge()
 
         # Input Image
         self.input_sub = rospy.Subscriber(image_topic, Image, self.input_callback, queue_size=10)
@@ -128,7 +125,7 @@ class RosTensorFlow():
 
         start_time = int(time.time() * 1000)
 
-        input_cv_image = self._cv_bridge.imgmsg_to_cv2(input_cv_image, "bgr8")
+        input_cv_image = np.frombuffer(input_cv_image.data, dtype=np.uint8).reshape(input_cv_image.height, input_cv_image.width, -1)
         input_cv_image = cv2.resize(input_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
 
         # Publish the model input image
