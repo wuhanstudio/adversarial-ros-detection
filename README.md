@@ -47,7 +47,7 @@ $ roslaunch turtlebot3_lane turtlebot3_lane_traffic_signs.launch
 #### Step 2: Setup the server
 
 ```
-$ roslaunch rosbridge_server rosbridge_websocket.launch
+$ roslaunch turtlebot3_lane rosbridge_websocket.launch
 $ cd model
 
 # You may need to put the turtlebot on track first
