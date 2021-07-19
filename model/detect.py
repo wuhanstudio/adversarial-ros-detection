@@ -36,9 +36,9 @@ class RosTensorFlow():
         self.monochrome = monochrome
 
         if self.monochrome:
-            self.noise = np.zeros((160, 320))
+            self.noise = np.zeros((240, 320))
         else:
-            self.noise = np.zeros((160, 320, 3))
+            self.noise = np.zeros((240, 320, 3))
 
         self.adv_patch_boxes = []
         self.fixed = False
@@ -120,8 +120,8 @@ class RosTensorFlow():
         if(clear_msg.data > 0):
             self.fixed = True
             self.patches = []
-            patch_cv_image = np.zeros((160, 320, 3))
-            # patch_cv_image = cv2.resize(patch_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
+            patch_cv_image = np.zeros((240, 320, 3))
+            # patch_cv_image = cv2.resize(patch_cv_image, (320, 240), interpolation = cv2.INTER_AREA)
             for box in self.adv_patch_boxes:
                 if self.monochrome:
                     patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 0] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
@@ -140,9 +140,9 @@ class RosTensorFlow():
             self.adv_patch_boxes = []
             self.patches = []
             if self.monochrome:
-                self.noise = np.zeros((160, 320))
+                self.noise = np.zeros((240, 320))
             else:
-                self.noise = np.zeros((160, 320, 3))
+                self.noise = np.zeros((240, 320, 3))
             self.iter = 0
 
     def patch_callback(self, attack_msg):
@@ -165,7 +165,7 @@ class RosTensorFlow():
         r, g, b = input_cv_image.split()
         input_cv_image = np.array(PImage.merge("RGB", (b, g, r)))
 
-        input_cv_image = cv2.resize(input_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
+        input_cv_image = cv2.resize(input_cv_image, (320, 240), interpolation = cv2.INTER_AREA)
 
         # Publish the model input image
         self.publish_image(input_cv_image, self.input_pub)
@@ -299,7 +299,7 @@ if __name__ == '__main__':
     rospy.init_node('ros_object_detection')
 
     # We can also read images from usb_cam
-    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=160 _pixel_format:=yuyv
+    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=240 _pixel_format:=yuyv
     if args.env == 'camera':
         image_topic = "/usb_cam/image_raw"
     if args.env == 'gazebo':

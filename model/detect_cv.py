@@ -121,7 +121,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # We can also read images from usb_cam
-    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=160 _pixel_format:=yuyv
+    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=240 _pixel_format:=yuyv
     if args.env == 'camera':
         image_topic = "/usb_cam/image_raw"
     if args.env == 'gazebo':

@@ -32,7 +32,7 @@ class LineFollower(object):
         # Bear in mind that because the first value of the image matrix is start and second value is down limit.
         # Select the limits so that it gets the line not too close and not too far, and the minimum portion possible
         # To make process faster.
-        cv_image = cv2.resize(cv_image, (320, 160), interpolation = cv2.INTER_AREA)
+        cv_image = cv2.resize(cv_image, (320, 240), interpolation = cv2.INTER_AREA)
 
         height, width, channels = cv_image.shape
         rows_to_watch = 40
