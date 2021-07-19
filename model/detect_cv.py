@@ -54,7 +54,7 @@ class CVDetector():
         try:
             # Convert your ROS Image message to OpenCV2
             cv2_img = self.bridge.imgmsg_to_cv2(msg, "bgr8")
-            img = cv2.resize(cv2_img, (320, 160), interpolation = cv2.INTER_AREA)
+            img = cv2.resize(cv2_img, (320, 240), interpolation = cv2.INTER_AREA)
 
             # Publish the model input image
             self.publish_image(img, self.input_pub)
@@ -62,7 +62,7 @@ class CVDetector():
             height, width, channels = img.shape
 
             # Detecting objects (YOLO)
-            blob = cv2.dnn.blobFromImage(img, 1./255, (320, 160), (0, 0, 0), False, crop=False)
+            blob = cv2.dnn.blobFromImage(img, 1./255, (320, 240), (0, 0, 0), False, crop=False)
             self.net.setInput(blob)
             outs = self.net.forward(self.output_layers)
 

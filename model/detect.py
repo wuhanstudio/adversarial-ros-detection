@@ -30,29 +30,53 @@ import keras.backend as K
 from datetime import datetime
 
 class RosTensorFlow():
-    def __init__(self, model, image_topic):
+    def __init__(self, model, attack_type, monochrome, image_topic):
         self.epsilon = 1
         self.graph = tf.compat.v1.get_default_graph()
-        self.noise = np.zeros((160, 320 , 3))
+        self.monochrome = monochrome
+
+        if self.monochrome:
+            self.noise = np.zeros((160, 320))
+        else:
+            self.noise = np.zeros((160, 320, 3))
+
         self.adv_patch_boxes = []
         self.fixed = False
 
         self.model = load_model(model)
         self.model.summary()
+        self.attack_type = attack_type
 
         self.delta = None
         for out in self.model.output:
             # Targeted One Box
-            # loss = K.max(K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]))
-            # Targeted More boxes
-            loss = K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5])
-            # Untargeted More boxes
-            # loss = K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]) + K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 6]) + K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 7])
+            if attack_type == "one_targeted":
+                loss = K.max(K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]))
+
+            # Targeted Multi boxes
+            if attack_type == "multi_targeted":
+                loss = K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5])
+
+            # Untargeted Multi boxes
+            if attack_type == "multi_untargeted":
+                loss = K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 5]) + K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 6]) + K.sigmoid(K.reshape(out, (-1, 8))[:, 4]) * K.sigmoid(K.reshape(out, (-1, 8))[:, 7])
+
             grads = K.gradients(loss, self.model.input)
             if self.delta == None:
                 self.delta =  K.sign(grads[0])
             else:
                 self.delta = self.delta + K.sign(grads[0])
+
+        # Store current patches
+        self.patches = []
+
+        # loss = K.sum(K.abs((self.model.input-K.mean(self.model.input))))
+        loss = - 0.01 * tf.reduce_sum(tf.image.total_variation(self.model.input))
+
+        # Mirror
+        # loss = - 0.01 * tf.reduce_sum(tf.image.total_variation(self.model.input)) - 0.01 * tf.reduce_sum(K.abs(self.model.input - tf.image.flip_left_right(self.model.input)))
+        grads = K.gradients(loss, self.model.input)
+        self.delta = self.delta + K.sign(grads[0])
 
         self.iter = 0
 
@@ -95,10 +119,17 @@ class RosTensorFlow():
     def fix_patch_callback(self, clear_msg):
         if(clear_msg.data > 0):
             self.fixed = True
+            self.patches = []
             patch_cv_image = np.zeros((160, 320, 3))
             # patch_cv_image = cv2.resize(patch_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
             for box in self.adv_patch_boxes:
-                patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
+                if self.monochrome:
+                    patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 0] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
+                    patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 1] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
+                    patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 2] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
+                else:
+                    patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
+                self.patches.append(self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])])
             # Publish the patch image
             self.publish_image(patch_cv_image * 255.0, self.patch_pub)
         else:
@@ -107,7 +138,11 @@ class RosTensorFlow():
     def clear_patch_callback(self, clear_msg):
         if(clear_msg.data > 0):
             self.adv_patch_boxes = []
-            self.noise = np.zeros((160, 320 , 3))
+            self.patches = []
+            if self.monochrome:
+                self.noise = np.zeros((160, 320))
+            else:
+                self.noise = np.zeros((160, 320, 3))
             self.iter = 0
 
     def patch_callback(self, attack_msg):
@@ -126,6 +161,10 @@ class RosTensorFlow():
         start_time = int(time.time() * 1000)
 
         input_cv_image = np.frombuffer(input_cv_image.data, dtype=np.uint8).reshape(input_cv_image.height, input_cv_image.width, -1)
+        input_cv_image = PImage.fromarray(np.uint8(input_cv_image))
+        r, g, b = input_cv_image.split()
+        input_cv_image = np.array(PImage.merge("RGB", (b, g, r)))
+
         input_cv_image = cv2.resize(input_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
 
         # Publish the model input image
@@ -137,11 +176,30 @@ class RosTensorFlow():
         input_cv_image = input_cv_image.astype(np.float32) / 255.0
 
         with self.graph.as_default():
-            for box in self.adv_patch_boxes:
-                input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
+            if not self.fixed:
+                for box in self.adv_patch_boxes:
+                    if self.monochrome:
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 0] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 1] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 2] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
+                    else:
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :]
+            else:
+                ib = 0
+                for box in self.adv_patch_boxes:
+                    if self.monochrome:
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 0] = self.patches[ib]
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 1] = self.patches[ib]
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 2] = self.patches[ib]
+                    else:
+                        input_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), :] = self.patches[ib]
+                    ib = ib + 1
             if(len(self.adv_patch_boxes) > 0 and (not self.fixed)):
                 grads = self.sess.run(self.delta, feed_dict={self.model.input:np.array([input_cv_image])}) / 255.0
-                self.noise = self.noise + 5 * grads[0, :, :, :]
+                if self.monochrome:
+                    self.noise = self.noise + 5 / 3 * (grads[0, :, :, 0] + grads[0, :, :, 1] + grads[0, :, :, 2])
+                else:
+                    self.noise = self.noise + 5 * grads[0, :, :, :]
                 self.iter = self.iter + 1
 
             outs = self.sess.run(self.model.output, feed_dict={self.model.input:np.array([input_cv_image])})
@@ -234,6 +292,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Object Detection')
     parser.add_argument('--env', help='environment', choices=['camera', 'gazebo', 'turtlebot'], type=str, required=True)
     parser.add_argument('--model', help='deep learning model', type=str, required=True)
+    parser.add_argument('--attack', help='adversarial attacks type', choices=['one_targeted', 'multi_targeted', 'multi_untargeted'], type=str, required=False, default="multi_untargeted")
+    parser.add_argument('--monochrome', action='store_true', help='monochrome patch')
     args = parser.parse_args()
 
     rospy.init_node('ros_object_detection')
@@ -247,5 +307,5 @@ if __name__ == '__main__':
     if args.env == 'turtlebot':       
         image_topic = "/raspicam_node/image_raw"
 
-    tensor = RosTensorFlow(args.model, image_topic);
+    tensor = RosTensorFlow(args.model, args.attack, args.monochrome, image_topic);
     tensor.main()

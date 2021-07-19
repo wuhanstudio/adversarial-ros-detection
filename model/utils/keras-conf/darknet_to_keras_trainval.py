@@ -11,9 +11,9 @@ for file in glob.glob("*.txt"):
     data = file1.readlines()[0].split()
     class_id = int(data[0])
     cx = float(data[1]) * 320
-    cy = float(data[2]) * 160
+    cy = float(data[2]) * 240
     width = float(data[3]) * 320
-    height = float(data[4]) * 160
+    height = float(data[4]) * 240
     xmin = cx - width / 2
     ymin = cy - height / 2
     xmax = cx + width / 2
