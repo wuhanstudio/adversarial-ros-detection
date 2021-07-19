@@ -5,9 +5,9 @@ import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import Twist
 
-linear_x = 0
-angular_z = 0
 ratio = 1
+linear_x = 0.015 * ratio
+angular_z = 0
 
 def steer_callback(msg):
     global linear_x
