@@ -49,6 +49,8 @@ $ roslaunch turtlebot3_lane turtlebot3_lane_traffic_signs.launch
 ```
 $ roslaunch turtlebot3_lane rosbridge_websocket.launch
 $ cd model
+$ conda env create -f environment.yml
+$ conda activate adversarial-ros-detection
 
 # You may need to put the turtlebot on track first
 # rosrun teleop_twist_keyboard teleop_twist_keyboard.py
