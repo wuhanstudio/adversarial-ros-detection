@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 
+import time
 import argparse
+from typing import Counter
 import rospy
 from std_msgs.msg import Int32
 from geometry_msgs.msg import Twist
@@ -9,44 +11,66 @@ ratio = 1
 linear_x = 0.015 * ratio
 angular_z = 0
 
+flag_stop = False
+counter = 0
+stopped = False
+
 def steer_callback(msg):
     global linear_x
     global angular_z
+    global flag_stop
     angular_z = msg.angular.z
-    move = Twist()
-    move.angular.z = angular_z
-    move.linear.x = linear_x
-    pub.publish(move)
+    print(stopped)
+    if stopped:
+        angular_z = 0.0
 
 def callback(msg):
     global linear_x
     global angular_z
     global ratio
+    global flag_stop
+    global counter
+    global stopped
 
     # nothing
     if msg.data == 0:
         print('[0] No object')
         linear_x = 0.015 * ratio
+        stopped = False
 
-    # stop
+    # 40
     if msg.data == 1:
-        print('[1] Stop')
-        linear_x = 0.0
+        print('[1] 40')
+        linear_x = 0.045 * ratio
 
-    # 30 
+    # stop 
     if msg.data == 2:
-        print('[2] Deaccelerate')
-        linear_x = 0.01 * ratio
+        print('[2] Stop')
+        flag_stop = True
 
-    # 60
+    # 20
     if msg.data == 3:
-        print('[3] Accelerate')
-        linear_x = 0.02 * ratio
+        print('[3] 20')
+        linear_x = 0.025 * ratio
+        stopped = False
+
+    if flag_stop:
+        counter = counter + 1
+        print(counter)
+
+    if (flag_stop and counter > 95):
+        linear_x = 0.0
+        angular_z = 0.0
+
+        counter = 0
+        flag_stop = False
+        stopped = True
 
     move = Twist()
     move.angular.z = angular_z
     move.linear.x = linear_x
     pub.publish(move)
+
 
 parser = argparse.ArgumentParser(description='Object Detection')
 parser.add_argument('--env', help='environment', choices=['gazebo', 'turtlebot'], type=str, required=True)

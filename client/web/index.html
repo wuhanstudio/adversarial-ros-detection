@@ -39,26 +39,26 @@
     <!-- Visualize Input Images -->
     <div class="container">
         <div class="row">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <img id="input" src="./hold.png" />
                 <h4>Input Image</h4>
+            </div>
+	    <div class="col-md-6">
+                <img id="adv" src="./hold.png" />
+                <h4>Adversarial Image</h4>
             </div>
         </div>
         <div class="row">
             <div class="col-md-6">
-                <canvas id="canvas" width="320px" height="160px"></canvas>
+                <canvas id="canvas" width="320px" height="256px"></canvas>
                 <h4>Perturbation</h4>
             </div>
             <div class="col-md-6">
-                <img id="patch" width="320px" height="160px"></img>
+                <img id="patch" width="320px" height="256px"></img>
                 <h4>Patch</h4>
             </div>
         </div>
         <div class="row">
-            <div class="col-md-6">
-                <img id="adv" src="./hold.png" />
-                <h4>Adversarial Image</h4>
-            </div>
             <div class="col-md-6">
                 <div class="btn btn-primary" onclick="clear_patch()">Clear Patch</div>
                 <div class="custom-control custom-checkbox">

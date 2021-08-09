@@ -36,9 +36,9 @@ class RosTensorFlow():
         self.monochrome = monochrome
 
         if self.monochrome:
-            self.noise = np.zeros((160, 320))
+            self.noise = np.zeros((256, 320))
         else:
-            self.noise = np.zeros((160, 320, 3))
+            self.noise = np.zeros((256, 320, 3))
 
         self.adv_patch_boxes = []
         self.fixed = False
@@ -120,8 +120,8 @@ class RosTensorFlow():
         if(clear_msg.data > 0):
             self.fixed = True
             self.patches = []
-            patch_cv_image = np.zeros((160, 320, 3))
-            # patch_cv_image = cv2.resize(patch_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
+            patch_cv_image = np.zeros((256, 320, 3))
+            # patch_cv_image = cv2.resize(patch_cv_image, (320, 256), interpolation = cv2.INTER_AREA)
             for box in self.adv_patch_boxes:
                 if self.monochrome:
                     patch_cv_image[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2]), 0] = self.noise[box[1]:(box[1]+box[3]), box[0]:(box[0] + box[2])]
@@ -140,9 +140,9 @@ class RosTensorFlow():
             self.adv_patch_boxes = []
             self.patches = []
             if self.monochrome:
-                self.noise = np.zeros((160, 320))
+                self.noise = np.zeros((256, 320))
             else:
-                self.noise = np.zeros((160, 320, 3))
+                self.noise = np.zeros((256, 320, 3))
             self.iter = 0
 
     def patch_callback(self, attack_msg):
@@ -154,7 +154,7 @@ class RosTensorFlow():
             self.adv_patch_boxes[attack_msg.data[0]] = box
 
     def input_callback(self, input_cv_image):
-        classes = ["stop", "30", "60"]
+        classes = ["40", "stop", "20"]
         confidence_threshold = 0.01
         font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -165,10 +165,10 @@ class RosTensorFlow():
         r, g, b = input_cv_image.split()
         input_cv_image = np.array(PImage.merge("RGB", (b, g, r)))
 
-        input_cv_image = cv2.resize(input_cv_image, (320, 160), interpolation = cv2.INTER_AREA)
+        input_cv_image = cv2.resize(input_cv_image, (320, 256), interpolation = cv2.INTER_AREA)
 
         # Publish the model input image
-        self.publish_image(input_cv_image, self.input_pub)
+        self.publish_image(cv2.resize(input_cv_image, (320, 256), interpolation = cv2.INTER_AREA), self.input_pub)
         
         # get image shape
         height, width, channels = input_cv_image.shape
@@ -211,7 +211,7 @@ class RosTensorFlow():
             for out in outs:
                 anchors = [[12., 16.], [19., 36.], [40., 28.]]
                 # anchors = [[10., 14.],  [23., 27.],  [37., 58.]]
-                num_anchors = int(out.shape[-1] / (5+len(classes)))
+                num_anchors = 3
                 grid_size = np.shape(out)[1:3]
                 out = out.reshape((-1, 5+len(classes)))
                 # generate x_y_offset grid map
@@ -281,7 +281,7 @@ class RosTensorFlow():
         print ("fps: ", str(round(fps, 2)))
         # cv2.imshow("Image", input_cv_image)
         # Publish the output image
-        self.publish_image(input_cv_image * 255.0, self.adv_pub)
+        self.publish_image(cv2.resize(input_cv_image, (320, 256), interpolation = cv2.INTER_AREA) * 255.0, self.adv_pub)
 
         cv2.waitKey(1)
 
@@ -299,7 +299,7 @@ if __name__ == '__main__':
     rospy.init_node('ros_object_detection')
 
     # We can also read images from usb_cam
-    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=160 _pixel_format:=yuyv
+    # rosrun usb_cam usb_cam_node _video_device:=/dev/video0 _image_width:=320 _image_height:=256 _pixel_format:=yuyv
     if args.env == 'camera':
         image_topic = "/usb_cam/image_raw"
     if args.env == 'gazebo':

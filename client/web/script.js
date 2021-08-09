@@ -93,7 +93,7 @@ function clear_patch() {
     clear_patch_pub.publish(clear_patch_msg);
     boxes = [];
     var ctx=$('#canvas')[0].getContext('2d'); 
-    ctx.clearRect(0, 0, 320, 160);
+    ctx.clearRect(0, 0, 320, 256);
 }
 
 function fix_patch(fixed) {
@@ -176,7 +176,7 @@ $(document).ready(function () {
         });
     
         $(document).on('mousemove',function(e){
-            ctx.clearRect(0, 0, 320, 160);
+            ctx.clearRect(0, 0, 320, 256);
             boxes.forEach(b => {
                 ctx.fillRect(b.startX, b.startY, b.w, b.h);
             });
