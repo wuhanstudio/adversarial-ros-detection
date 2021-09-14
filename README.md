@@ -38,6 +38,10 @@ $ sudo apt install ros-noetic-rosbridge-suite ros-noetic-turtlebot3-simulations 
 ```
 $ cd ros_ws
 $ rosdep install --from-paths src --ignore-src -r -y
+
+# For ROS, please make sure you use the system python3, rather than python from anaconda
+# Deactivate conda and rm -rf build devel should solve the problem
+
 $ catkin_make
 $ source devel/setup.sh
 $ export TURTLEBOT3_MODEL=waffle
