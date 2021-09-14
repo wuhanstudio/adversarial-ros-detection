@@ -50,6 +50,10 @@ $ roslaunch turtlebot3_lane turtlebot3_lane_traffic_signs.launch
 
 #### Step 2: Setup the server
 
+Pre-trained models are available here, replace the `weights` folder with: 
+
+https://github.com/wuhanstudio/adversarial-ros-detection/releases/tag/v1.0.0
+
 ```
 $ roslaunch turtlebot3_lane rosbridge_websocket.launch
 $ cd model
