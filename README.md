@@ -30,7 +30,7 @@ Generating adversarial patch is as easy as **drag and drop**.
 
 ```
 $ sudo apt install ros-noetic-desktop
-$ sudo apt install ros-noetic-rosbridge-suite ros-noetic-turtlebot3-simulations ros-noetic-turtlebot3-gazebo
+$ sudo apt install ros-noetic-rosbridge-suite ros-noetic-turtlebot3-simulations ros-noetic-turtlebot3-gazebo ros-noetic-teleop-twist-keyboard
 ```
 
 #### Step 1: Setup the TurtleBot
