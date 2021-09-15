@@ -2,6 +2,8 @@
 
 ![](doc/attack.jpg)
 
+> Fool deep learning models to recognize nonsense noises as traffic signs
+
 > Attacking End-to-End Object Detection Systems
 
 - [Adversarial Detection in ROS](#adversarial-detection-in-ros)
