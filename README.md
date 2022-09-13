@@ -2,6 +2,8 @@
 
 > Attacking Object Detection Systems in Real Time
 
+[[ Talk ]](https://detection.wuhanstudio.uk) [[ Video ]]() [[ Paper ]](https://arxiv.org/abs/2209.01962) [[ Code ]](https://github.com/wuhanstudio/adversarial-ros-detection)
+
 <img src="doc/demo.jpg" width="50%">
 
 <!-- ![](doc/attack.jpg) -->
