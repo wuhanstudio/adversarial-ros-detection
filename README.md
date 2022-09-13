@@ -1,26 +1,10 @@
 ## Adversarial Detection in ROS
 
-![](doc/attack.jpg)
+> Attacking Object Detection Systems in Real Time
 
-> Fool deep learning models to recognize nonsense noises as traffic signs
+<img src="doc/demo.jpg" width="50%">
 
-> Attacking End-to-End Object Detection Systems
-
-- [Adversarial Detection in ROS](#adversarial-detection-in-ros)
-  * [Overview](#overview)
-  * [Quick Start](#quick-start)
-    + [Step 0: Prerequisites](#step-0-prerequisites)
-    + [Step 1: Setup  the TurtleBot](#step-1-setup-the-turtlebot)
-    + [Step 2: Setup the server](#step-2-setup-the-server)
-    + [Step 3: Setup the browser](#step-3-setup-the-browser)
-  * [Training the model (Optional)](#training-the-model-optional)
-    + [Step 1: Collect the Data](#step-1-collect-the-data)
-    + [Step 2: Train the model](#step-2-train-the-model)
-      - [Training darknet yolov3-tiny](#training-darknet-yolov3-tiny)
-      - [Training darknet yolov4-tiny](#training-darknet-yolov4-tiny)
-      - [Training yolov4 mobilenet lite](#training-yolov4-mobilenet-lite)
-
-### Overview
+<!-- ![](doc/attack.jpg) -->
 
 Generating adversarial patch is as easy as **drag and drop**.
 
@@ -41,7 +25,7 @@ $ sudo apt install ros-noetic-rosbridge-suite ros-noetic-turtlebot3-simulations 
 $ cd ros_ws
 $ rosdep install --from-paths src --ignore-src -r -y
 
-# For ROS, please make sure you use the system python3, rather than python from anaconda
+# Please make sure you use the system python3, rather than python from anaconda
 
 $ catkin_make
 $ source devel/setup.sh
@@ -63,8 +47,6 @@ $ cd ros_ws
 $ source devel/setup.sh
 $ roslaunch turtlebot3_lane rosbridge_websocket.launch
 
-$ cd model
-
 $ # CPU
 $ conda env create -f environment.yml
 $ conda activate adversarial-ros-detection
@@ -72,6 +54,8 @@ $ conda activate adversarial-ros-detection
 $ # GPU
 $ conda env create -f environment_gpu.yml
 $ conda activate adversarial-ros-gpu-detection
+
+$ cd model
 
 # For Gazebo Simulator
 $ python3 detect.py --env gazebo --model weights/keras/yolov4/yolov4-tiny-traffic-3_gazebo.h5
