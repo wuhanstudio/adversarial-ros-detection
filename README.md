@@ -31,7 +31,7 @@ Generating adversarial patch is as easy as **drag and drop**.
 #### Step 0: Prerequisites
 
 ```
-$ sudo apt install ros-noetic-desktop
+$ sudo apt install ros-noetic-desktop-full
 $ sudo apt install ros-noetic-rosbridge-suite ros-noetic-turtlebot3-simulations ros-noetic-turtlebot3-gazebo ros-noetic-teleop-twist-keyboard
 ```
 
@@ -42,12 +42,14 @@ $ cd ros_ws
 $ rosdep install --from-paths src --ignore-src -r -y
 
 # For ROS, please make sure you use the system python3, rather than python from anaconda
-# Deactivate conda and rm -rf build devel should solve the problem
 
 $ catkin_make
 $ source devel/setup.sh
 $ export TURTLEBOT3_MODEL=waffle
 $ roslaunch turtlebot3_lane turtlebot3_lane_traffic_signs.launch
+
+# You may need to put the turtlebot on track first
+# roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 ```
 
 #### Step 2: Setup the server
@@ -57,22 +59,28 @@ Pre-trained models are available here, replace the `weights` folder with:
 https://github.com/wuhanstudio/adversarial-ros-detection/releases/tag/v1.0.0
 
 ```
+$ cd ros_ws
+$ source devel/setup.sh
 $ roslaunch turtlebot3_lane rosbridge_websocket.launch
+
 $ cd model
+
+$ # CPU
 $ conda env create -f environment.yml
 $ conda activate adversarial-ros-detection
 
-# You may need to put the turtlebot on track first
-# rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+$ # GPU
+$ conda env create -f environment_gpu.yml
+$ conda activate adversarial-ros-gpu-detection
 
 # For Gazebo Simulator
-$ python3 detect.py --env gazebo --model weights/keras/yolov4/yolov4_mobilenet_lite_3_gazebo.h5
+$ python3 detect.py --env gazebo --model weights/keras/yolov4/yolov4-tiny-traffic-3_gazebo.h5
 
 # For real turtlebot3
-$ python3 detect.py --env turtlebot --model weights/keras/yolov4/yolov4_mobilenet_lite_3_gazebo_turtlebot.h5
+$ python3 detect.py --env turtlebot --model weights/keras/yolov4/yolov4-tiny-traffic-3_turtlebot.h5
 ```
 
-**Optional** (test models only without attacks):
+**Optional** (test models without attacks):
 
 ```
 # For real turblebot3
@@ -82,24 +90,17 @@ $ python3 detect_cv.py --env turtlebot --cfg weights/darknet/yolov3/yolov3-tiny-
 $ python3 detect_cv.py --env gazebo --cfg weights/darknet/yolov3/yolov3-tiny-traffic-3.cfg --weights weights/darknet/yolov3/yolov3-tiny-traffic-3_gazebo.weights --classes weights/classes.txt
 ```
 
-
-
 #### Step 3: Setup the browser
 
 This is just a website, your can use any web server, just serve all the content under **client/web**.
 
-The client is built as a single executable file.
-
-```
-$ ./client
-```
-
 For Linux and Mac, or other Unix, the server can be built with:
 
 ```
-$ go get -u github.com/gobuffalo/packr/packr
-$ go get github.com/gobuffalo/packr@v1.30.1
-$ packr build
+$ cd client
+$ go install github.com/gobuffalo/packr/v2@v2.8.3
+$ go build
+$ ./client
 ```
 
 The web page will be available at: http://localhost:3333/
