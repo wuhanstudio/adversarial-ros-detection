@@ -105,3 +105,17 @@ You can also test our attacks without Gazebo Simulator.
 https://github.com/wuhanstudio/adversarial-driving
 
 [![](https://github.com/wuhanstudio/adversarial-detection/blob/master/doc/attack.png?raw=true)](https://github.com/wuhanstudio/adversarial-detection)
+
+
+## Citation
+
+```
+@misc{han2022detection,
+  doi = {10.48550/ARXIV.2209.01962},
+  url = {https://arxiv.org/abs/2209.01962},
+  author = {Wu, Han and Yunas, Syed and Rowlands, Sareh and Ruan, Wenjie and Wahlstrom, Johan}, 
+  title = {Adversarial Detection: Attacking Object Detection in Real Time},
+  publisher = {arXiv},
+  year = {2022},
+}
+```
