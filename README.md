@@ -95,7 +95,7 @@ The web page will be available at: http://localhost:3333/
 
 That's it!
 
-![](doc/adversarial-ros-detection.png)
+<!-- ![](doc/adversarial-ros-detection.png) -->
 
 
 ## Adversarial Detection
