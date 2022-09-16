@@ -4,7 +4,7 @@
 
 [[ Talk ]](https://detection.wuhanstudio.uk) [[ Video ]](https://youtu.be/zJZ1aNlXsMU) [[ Paper ]](https://arxiv.org/abs/2209.01962) [[ Code ]](https://github.com/wuhanstudio/adversarial-ros-detection)
 
-<img src="doc/demo.jpg" width="50%">
+<img src="doc/demo.jpg" width="60%">
 
 <!-- ![](doc/attack.jpg) -->
 
