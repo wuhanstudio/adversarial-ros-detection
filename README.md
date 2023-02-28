@@ -61,6 +61,9 @@ $ conda activate adversarial-ros-gpu-detection
 
 $ cd model
 
+# Pre-trained models are available here
+# https://github.com/wuhanstudio/adversarial-ros-detection/releases
+
 # For Gazebo Simulator
 $ python3 detect.py --env gazebo --model weights/keras/yolov4/yolov4-tiny-traffic-3_gazebo.h5
 
